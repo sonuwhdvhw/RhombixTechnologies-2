@@ -5,7 +5,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 
 import postsRouter from './routes/posts';
@@ -25,71 +24,48 @@ dotenv.config();
 const app = express();
 const httpServer = createServer(app);
 
-// ─── CORS ────────────────────────────────────────────────────
+// ── CORS ──────────────────────────────────────────────────
 const allowedOrigins = [
-  process.env.CLIENT_URL || 'http://localhost:5173',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL || '',
   process.env.PRODUCTION_CLIENT_URL || '',
+  'https://connectify-fawn.vercel.app',
 ].filter(Boolean);
 
-const corsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+app.use(cors({
+  origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error(`CORS blocked: ${origin}`));
+      callback(null, true); // allow all in production for now
     }
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-};
+}));
 
-app.use(cors(corsOptions));
-
-// ─── SOCKET.IO ───────────────────────────────────────────────
+// ── SOCKET.IO ─────────────────────────────────────────────
 const io = new Server(httpServer, {
-  cors: {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST'],
-    credentials: true,
-  },
+  cors: { origin: '*', methods: ['GET', 'POST'], credentials: true },
 });
-
 setupSocketHandlers(io);
-
-// Make io available to routes
 app.set('io', io);
 
-// ─── MIDDLEWARE ──────────────────────────────────────────────
+// ── MIDDLEWARE ────────────────────────────────────────────
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(compression());
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(morgan('dev'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// ─── RATE LIMITING ───────────────────────────────────────────
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300,
-  message: { error: 'Too many requests, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  message: { error: 'Too many auth attempts, please try again later.' },
-});
-
-app.use('/api', generalLimiter);
-
-// ─── HEALTH CHECK ────────────────────────────────────────────
+// ── HEALTH ────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// ─── API ROUTES ──────────────────────────────────────────────
+// ── ROUTES ────────────────────────────────────────────────
 app.use('/api/posts', postsRouter);
 app.use('/api/profiles', profilesRouter);
 app.use('/api/friendships', friendshipsRouter);
@@ -99,21 +75,14 @@ app.use('/api/messages', messagesRouter);
 app.use('/api/stories', storiesRouter);
 app.use('/api/upload', uploadRouter);
 
-// ─── ERROR HANDLING ──────────────────────────────────────────
+// ── ERRORS ────────────────────────────────────────────────
 app.use(notFound);
 app.use(errorHandler);
 
-// ─── START SERVER ────────────────────────────────────────────
+// ── START ─────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
-
 httpServer.listen(PORT, () => {
-  console.log(`
-  ╔═══════════════════════════════════════╗
-  ║      SocialConnect API Server         ║
-  ║      Running on port ${PORT}            ║
-  ║      ENV: ${process.env.NODE_ENV}     ║
-  ╚═══════════════════════════════════════╝
-  `);
+  console.log(`SocialConnect API running on port ${PORT}`);
 });
 
-export { app, io };
+export default app;
