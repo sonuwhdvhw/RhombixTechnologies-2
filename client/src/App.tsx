@@ -36,6 +36,12 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const FallbackRoute = () => {
+  const { isAuthenticated, isLoading } = useAuthStore();
+  if (isLoading) return null;
+  return <Navigate to={isAuthenticated ? '/feed' : '/'} replace />;
+};
+
 export default function App() {
   const { setUser, setLoading, fetchProfile } = useAuthStore();
   const { theme } = useUIStore();
@@ -103,7 +109,7 @@ export default function App() {
           </Route>
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<FallbackRoute />} />
         </Routes>
       </AnimatePresence>
     </div>
