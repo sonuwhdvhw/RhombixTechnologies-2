@@ -1,7 +1,11 @@
 import axios from 'axios';
 import { supabase } from './supabase';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? 'https://connectify-api.vercel.app/api' : '/api');
+const API_BASE_URL = import.meta.env.VITE_API_URL || (
+  import.meta.env.PROD && typeof window !== 'undefined' && window.location.hostname === 'connectify-fawn.vercel.app'
+    ? 'https://connectify-api.vercel.app/api'
+    : '/api'
+);
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
