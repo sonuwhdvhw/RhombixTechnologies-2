@@ -13,8 +13,8 @@ export default function AppLayout() {
   const { profile } = useAuthStore();
 
   return (
-    <div className="min-h-screen" style={{ background: '#08080f' }}>
-      {/* 3D Animated background */}
+    <div className="min-h-screen" style={{ background: '#f8f5ff' }}>
+      {/* Subtle 3D Animated background */}
       <AnimatedBackground />
 
       <Navbar />
@@ -38,32 +38,31 @@ export default function AppLayout() {
       <nav
         className="fixed bottom-0 left-0 right-0 h-[52px] flex items-center justify-around lg:hidden z-50"
         style={{
-          background: 'rgba(8,8,15,0.95)',
+          background: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(20px)',
-          borderTop: '1px solid rgba(139,92,246,0.15)',
+          borderTop: '1px solid rgba(124,58,237,0.12)',
+          boxShadow: '0 -4px 16px rgba(124,58,237,0.06)',
         }}
       >
         <NavLink to="/feed" className={({ isActive }) =>
-          `flex items-center justify-center w-12 h-full transition-colors ${isActive ? 'text-[#a78bfa]' : 'text-[#6060a0]'}`}>
+          `flex items-center justify-center w-12 h-full transition-colors ${isActive ? 'text-[#7c3aed]' : 'text-[#9585c5]'}`}>
           <Home size={24} />
         </NavLink>
         <NavLink to="/friends" className={({ isActive }) =>
-          `flex items-center justify-center w-12 h-full transition-colors ${isActive ? 'text-[#a78bfa]' : 'text-[#6060a0]'}`}>
+          `flex items-center justify-center w-12 h-full transition-colors ${isActive ? 'text-[#7c3aed]' : 'text-[#9585c5]'}`}>
           <Users size={24} />
         </NavLink>
-        <button
-          onClick={() => setCreatePostModalOpen(true)}
-          className="flex items-center justify-center w-12 h-full text-[#6060a0]"
-        >
+        <button onClick={() => setCreatePostModalOpen(true)}
+          className="flex items-center justify-center w-12 h-full text-[#9585c5]">
           <PlusSquare size={24} />
         </button>
         <NavLink to="/notifications" className={({ isActive }) =>
-          `relative flex items-center justify-center w-12 h-full transition-colors ${isActive ? 'text-[#a78bfa]' : 'text-[#6060a0]'}`}>
+          `relative flex items-center justify-center w-12 h-full transition-colors ${isActive ? 'text-[#7c3aed]' : 'text-[#9585c5]'}`}>
           <Heart size={24} />
           {notificationCount > 0 && <span className="notif-dot" />}
         </NavLink>
         <NavLink to={`/profile/${profile?.username}`} className={({ isActive }) =>
-          `flex items-center justify-center w-12 h-full transition-colors ${isActive ? 'text-[#a78bfa]' : 'text-[#6060a0]'}`}>
+          `flex items-center justify-center w-12 h-full transition-colors ${isActive ? 'text-[#7c3aed]' : 'text-[#9585c5]'}`}>
           <User size={22} />
         </NavLink>
       </nav>

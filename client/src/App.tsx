@@ -88,7 +88,7 @@ export default function App() {
   }, [setUser, setLoading, fetchProfile]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen" style={{ background: '#f8f5ff' }}>
       <CustomCursor />
       <AnimatePresence mode="wait">
         <Routes>

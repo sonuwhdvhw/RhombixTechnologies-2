@@ -185,8 +185,14 @@ export default function FriendsPage() {
                     <p className="text-xs text-slate-500">@{f.user.username}</p>
                   </Link>
                   <button
-                    onClick={() => handleSendRequest(f.user.id)}
-                    className="text-slate-600 hover:text-red-400 transition-colors"
+                    onClick={async () => {
+                      try {
+                        await friendshipsApi.remove(f.friendshipId);
+                        setFriends(prev => prev.filter(x => x.friendshipId !== f.friendshipId));
+                        toast.success('Friend removed');
+                      } catch { toast.error('Failed'); }
+                    }}
+                    className="text-[#9585c5] hover:text-red-400 transition-colors"
                     aria-label="Remove friend"
                   >
                     <UserX className="w-4 h-4" />
