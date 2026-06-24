@@ -58,7 +58,17 @@ export default function MessagesPage() {
       if (m.sender_id === partnerId || m.receiver_id === partnerId) { setMsgs(p => [...p, m]); setTimeout(scrollBottom, 50); }
       setConvs(p => p.map(c => c.partnerId === m.sender_id ? { ...c, lastMessage: m } : c));
     });
-    s.on('message:sent', (m: Message) => { setMsgs(p => p.find(x => x.id === m.id) ? p : [...p, m]); setTimeout(scrollBottom, 50); });
+    s.on('message:sent', (m: Message) => {
+      // Replace optimistic temp message with real message from server
+      setMsgs(p => {
+        const hasReal = p.find(x => x.id === m.id);
+        if (hasReal) return p;
+        // Remove the most recent optimistic message (tmp-*) and add real one
+        const withoutOptimistic = p.filter(x => !x.id.startsWith('tmp-'));
+        return [...withoutOptimistic, m];
+      });
+      setTimeout(scrollBottom, 50);
+    });
     s.on('typing:start', ({ userId }: { userId: string }) => { if (userId === partnerId) setPartnerTyping(true); });
     s.on('typing:stop', ({ userId }: { userId: string }) => { if (userId === partnerId) setPartnerTyping(false); });
     return () => { s.off('message:received'); s.off('message:sent'); s.off('typing:start'); s.off('typing:stop'); };

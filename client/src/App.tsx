@@ -6,22 +6,19 @@ import { useUIStore } from '@/store/uiStore';
 import { supabase } from '@/lib/supabase';
 import { connectSocket, disconnectSocket } from '@/lib/socket';
 
-// Pages — lazy loaded so they don't block initial render
-const LandingPage      = lazy(() => import('@/pages/LandingPage'));
-const LoginPage        = lazy(() => import('@/pages/auth/LoginPage'));
-const RegisterPage     = lazy(() => import('@/pages/auth/RegisterPage'));
-const FeedPage         = lazy(() => import('@/pages/FeedPage'));
-const ProfilePage      = lazy(() => import('@/pages/ProfilePage'));
+const LandingPage       = lazy(() => import('@/pages/LandingPage'));
+const LoginPage         = lazy(() => import('@/pages/auth/LoginPage'));
+const RegisterPage      = lazy(() => import('@/pages/auth/RegisterPage'));
+const FeedPage          = lazy(() => import('@/pages/FeedPage'));
+const ProfilePage       = lazy(() => import('@/pages/ProfilePage'));
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage'));
-const FriendsPage      = lazy(() => import('@/pages/FriendsPage'));
-const PostDetailPage   = lazy(() => import('@/pages/PostDetailPage'));
-const MessagesPage     = lazy(() => import('@/pages/MessagesPage'));
+const FriendsPage       = lazy(() => import('@/pages/FriendsPage'));
+const PostDetailPage    = lazy(() => import('@/pages/PostDetailPage'));
+const MessagesPage      = lazy(() => import('@/pages/MessagesPage'));
 
-// Layout
 import AppLayout from '@/components/layout/AppLayout';
 import CustomCursor from '@/components/ui/CustomCursor';
 
-// Full-screen loading spinner shown while auth resolves or lazy chunks load
 function PageLoader() {
   return (
     <div style={{
@@ -39,7 +36,6 @@ function PageLoader() {
   );
 }
 
-// Route guard
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuthStore();
   if (isLoading) return <PageLoader />;
@@ -65,7 +61,6 @@ export default function App() {
   const { theme } = useUIStore();
 
   useEffect(() => {
-    // Apply theme
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
@@ -81,30 +76,30 @@ export default function App() {
 
     let resolved = false;
 
-    // onAuthStateChange fires BEFORE getSession resolves on page load
-    // INITIAL_SESSION event is the first event — use it as source of truth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('[Auth event]', event, !!session);
+      console.log('[Auth event]', event, !!session?.user);
 
-      if (session?.user) {
-        setUser({ id: session.user.id, email: session.user.email! });
-        fetchProfile(session.user.id);
-        connectSocket(session.user.id);
-      } else {
-        if (event === 'SIGNED_OUT') {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
+        if (session?.user) {
+          setUser({ id: session.user.id, email: session.user.email! });
+          fetchProfile(session.user.id);
+          connectSocket(session.user.id);
+        } else if (event === 'INITIAL_SESSION') {
           setUser(null);
           disconnectSocket();
         }
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        disconnectSocket();
       }
+      // USER_UPDATED — ignore
 
-      // Resolve loading on first event (INITIAL_SESSION) or any subsequent event
-      if (!resolved || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+      if (!resolved) {
         resolved = true;
         setLoading(false);
       }
     });
 
-    // Fallback: if onAuthStateChange doesn't fire within 3s, release loading
     const fallback = setTimeout(() => {
       if (!resolved) {
         resolved = true;
@@ -124,12 +119,10 @@ export default function App() {
       <Suspense fallback={<PageLoader />}>
         <AnimatePresence mode="wait">
           <Routes>
-            {/* Public Routes */}
             <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
             <Route path="/auth/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/auth/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
 
-            {/* Protected Routes */}
             <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
               <Route path="/feed" element={<FeedPage />} />
               <Route path="/profile/:username" element={<ProfilePage />} />
@@ -140,7 +133,6 @@ export default function App() {
               <Route path="/messages/:partnerId" element={<MessagesPage />} />
             </Route>
 
-            {/* Fallback */}
             <Route path="*" element={<FallbackRoute />} />
           </Routes>
         </AnimatePresence>

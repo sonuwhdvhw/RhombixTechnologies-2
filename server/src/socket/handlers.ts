@@ -7,6 +7,7 @@ interface OnlineUser {
 }
 
 const onlineUsers = new Map<string, string>(); // userId -> socketId
+const socketUsers = new Map<string, string>(); // socketId -> userId
 
 export const setupSocketHandlers = (io: Server): void => {
   io.on('connection', (socket: Socket) => {
@@ -15,6 +16,7 @@ export const setupSocketHandlers = (io: Server): void => {
     // User joins with their userId
     socket.on('user:join', (userId: string) => {
       onlineUsers.set(userId, socket.id);
+      socketUsers.set(socket.id, userId); // track reverse map for auth
       socket.join(`user:${userId}`);
       io.emit('users:online', Array.from(onlineUsers.keys()));
       console.log(`User ${userId} joined`);
@@ -29,17 +31,24 @@ export const setupSocketHandlers = (io: Server): void => {
       socket.leave(roomId);
     });
 
-    // Real-time messaging
+    // Real-time messaging — derive senderId from authenticated socket map
     socket.on('message:send', async (data: {
       senderId: string;
       receiverId: string;
       content: string;
     }) => {
       try {
+        // Use server-tracked userId, not client-supplied senderId (prevents spoofing)
+        const authenticatedSenderId = socketUsers.get(socket.id);
+        if (!authenticatedSenderId) {
+          socket.emit('error', { message: 'Not authenticated' });
+          return;
+        }
+
         const { data: message, error } = await supabaseAdmin
           .from('messages')
           .insert({
-            sender_id: data.senderId,
+            sender_id: authenticatedSenderId,
             receiver_id: data.receiverId,
             content: data.content,
           })
@@ -88,13 +97,11 @@ export const setupSocketHandlers = (io: Server): void => {
 
     // Disconnect
     socket.on('disconnect', () => {
-      // Remove user from online list
-      for (const [userId, socketId] of onlineUsers.entries()) {
-        if (socketId === socket.id) {
-          onlineUsers.delete(userId);
-          io.emit('user:offline', userId);
-          break;
-        }
+      const userId = socketUsers.get(socket.id);
+      if (userId) {
+        onlineUsers.delete(userId);
+        socketUsers.delete(socket.id);
+        io.emit('user:offline', userId);
       }
       console.log(`Socket disconnected: ${socket.id}`);
     });

@@ -55,11 +55,12 @@ export default function RegisterPage() {
     setLoading(true);
 
     const goToFeed = (userId: string, email: string) => {
-      // Manually set user in store so PublicRoute sees isAuthenticated=true immediately
       setUser({ id: userId, email });
       fetchProfile(userId);
       toast.success('Welcome to Connectify! 🎉');
-      navigate('/feed', { replace: true });
+      setTimeout(() => {
+        navigate('/feed', { replace: true });
+      }, 800);
     };
 
     try {
@@ -70,15 +71,12 @@ export default function RegisterPage() {
       });
       if (error) throw error;
 
-      // Case 1: Session returned immediately (email confirmation OFF)
       if (data.session && data.user) {
         goToFeed(data.user.id, data.user.email!);
         return;
       }
 
-      // Case 2: No session — try signing in right away
       if (data.user) {
-        // Duplicate email check
         if (data.user.identities && data.user.identities.length === 0) {
           toast.error('An account with this email already exists.');
           return;
@@ -95,7 +93,6 @@ export default function RegisterPage() {
         }
       }
 
-      // Case 3: Email confirmation required
       setEmailSent(true);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Registration failed');
@@ -169,7 +166,6 @@ export default function RegisterPage() {
             </p>
 
             <form onSubmit={handleSubmit} noValidate className="space-y-3">
-              {/* Full name */}
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#a8a8d0' }}>Full name</label>
                 <input type="text" placeholder="Your full name" value={form.full_name} onChange={set('full_name')}
@@ -177,7 +173,6 @@ export default function RegisterPage() {
                 <ErrMsg msg={errors.full_name} />
               </div>
 
-              {/* Username */}
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#a8a8d0' }}>Username</label>
                 <div className="relative">
@@ -191,7 +186,6 @@ export default function RegisterPage() {
                 <ErrMsg msg={errors.username} />
               </div>
 
-              {/* Email */}
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#a8a8d0' }}>Email</label>
                 <input type="email" placeholder="you@email.com" value={form.email} onChange={set('email')}
@@ -199,7 +193,6 @@ export default function RegisterPage() {
                 <ErrMsg msg={errors.email} />
               </div>
 
-              {/* Password */}
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#a8a8d0' }}>Password</label>
                 <div className="relative">
@@ -214,7 +207,6 @@ export default function RegisterPage() {
                 <ErrMsg msg={errors.password} />
               </div>
 
-              {/* Confirm */}
               <div>
                 <label className="block text-xs font-semibold mb-1.5" style={{ color: '#a8a8d0' }}>Confirm password</label>
                 <input type={showPw ? 'text' : 'password'} placeholder="Repeat password" value={form.confirmPassword}

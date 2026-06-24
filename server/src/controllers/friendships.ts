@@ -61,12 +61,25 @@ export const respondToRequest = async (
 
     if (error || !data) throw createError('Friend request not found', 404);
 
-    // Update follower counts if accepted
+    // Update follower/following counts if accepted
     if (status === 'accepted') {
-      await supabaseAdmin.rpc('increment_followers', {
-        user_id: data.receiver_id,
-        friend_id: data.requester_id,
-      });
+      // Increment following_count for requester
+      const { data: rqProfile } = await supabaseAdmin
+        .from('profiles').select('following_count').eq('id', data.requester_id).single();
+      if (rqProfile) {
+        await supabaseAdmin.from('profiles')
+          .update({ following_count: (rqProfile.following_count || 0) + 1 })
+          .eq('id', data.requester_id);
+      }
+
+      // Increment followers_count for receiver
+      const { data: rvProfile } = await supabaseAdmin
+        .from('profiles').select('followers_count').eq('id', data.receiver_id).single();
+      if (rvProfile) {
+        await supabaseAdmin.from('profiles')
+          .update({ followers_count: (rvProfile.followers_count || 0) + 1 })
+          .eq('id', data.receiver_id);
+      }
 
       // Notify requester their request was accepted
       await supabaseAdmin.from('notifications').insert({

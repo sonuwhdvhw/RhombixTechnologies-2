@@ -52,12 +52,14 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      // persist user + auth state, but always start with isLoading=true
-      // so App.tsx getSession() can properly resolve it
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      // FIXED: isLoading persist nahi hoga — hamesha true se start hoga
+      // isAuthenticated bhi persist nahi — sirf Supabase session source of truth hai
+      partialize: (state) => ({ user: state.user }),
       onRehydrateStorage: () => (state) => {
-        // After rehydration, keep isLoading true until getSession resolves
-        if (state) state.isLoading = true;
+        if (state) {
+          state.isLoading = true;
+          state.isAuthenticated = false; // Supabase session verify hone tak false
+        }
       },
     }
   )

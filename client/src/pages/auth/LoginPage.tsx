@@ -33,11 +33,11 @@ export default function LoginPage() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
       if (data.user) {
-        // Manually set store so ProtectedRoute sees isAuthenticated=true immediately
         setUser({ id: data.user.id, email: data.user.email! });
         fetchProfile(data.user.id);
       }
-      navigate('/feed', { replace: true });
+      // Small delay so store state settles before PublicRoute checks isAuthenticated
+      setTimeout(() => navigate('/feed', { replace: true }), 300);
     } catch (err: unknown) {
       toast.error(err instanceof Error && err.message.includes('Invalid') ? 'Incorrect email or password' : 'Login failed');
     } finally { setLoading(false); }

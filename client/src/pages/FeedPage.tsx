@@ -67,11 +67,13 @@ export default function FeedPage() {
 
   useEffect(() => {
     if (inView && hasMore && !loadingMore && !loading) {
-      const next = page + 1;
-      setPage(next);
-      loadPosts(next);
+      setPage(prev => {
+        const next = prev + 1;
+        loadPosts(next);
+        return next;
+      });
     }
-  }, [inView, hasMore, loadingMore, loading]);
+  }, [inView, hasMore, loadingMore, loading, loadPosts]);
 
   useEffect(() => {
     const ch = supabase.channel('feed-new')

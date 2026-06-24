@@ -127,7 +127,8 @@ export default function NotificationsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm" style={{ color: '#0f0820' }}>
                       <span className="font-bold">{n.actor?.full_name || n.actor?.username}</span>
-                      {' '}{notificationMessages[n.type]?.('').replace(n.actor?.full_name || '', '').trim()}
+                      {' '}{notificationMessages[n.type]?.(n.actor?.full_name || n.actor?.username || '')
+                        .replace(n.actor?.full_name || n.actor?.username || '', '').trim()}
                     </p>
                     <p className="text-xs mt-0.5" style={{ color: '#9585c5' }}>{formatRelativeTime(n.created_at)}</p>
                   </div>

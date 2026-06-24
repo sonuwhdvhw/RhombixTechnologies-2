@@ -106,10 +106,18 @@ export const viewStory = async (
       .from('story_views')
       .upsert({ story_id: id, viewer_id: viewerId }, { onConflict: 'story_id,viewer_id' });
 
-    await supabaseAdmin
+    // Increment views_count safely
+    const { data: storyData } = await supabaseAdmin
       .from('stories')
-      .update({ views_count: supabaseAdmin.rpc('increment') as unknown as number })
-      .eq('id', id);
+      .select('views_count')
+      .eq('id', id)
+      .single();
+    if (storyData) {
+      await supabaseAdmin
+        .from('stories')
+        .update({ views_count: (storyData.views_count || 0) + 1 })
+        .eq('id', id);
+    }
 
     res.json({ message: 'Story viewed' });
   } catch (err) {

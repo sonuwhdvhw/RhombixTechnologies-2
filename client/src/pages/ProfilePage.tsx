@@ -124,7 +124,8 @@ export default function ProfilePage() {
       const { data } = await uploadApi.upload(f, 'media', 'avatars');
       await profilesApi.update({ avatar_url: data.url });
       setProfile(p => p ? { ...p, avatar_url: data.url } : p);
-      if (isOwner) setMe({ ...me!, avatar_url: data.url });
+      // Safe update — fetch latest me from store at call time
+      if (isOwner && me) setMe({ ...me, avatar_url: data.url });
       toast.success('Photo updated!');
     } catch { toast.error('Failed to update photo'); }
   };

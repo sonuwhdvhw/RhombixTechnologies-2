@@ -61,7 +61,7 @@ export default function AppLayout() {
           <Heart size={24} />
           {notificationCount > 0 && <span className="notif-dot" />}
         </NavLink>
-        <NavLink to={`/profile/${profile?.username}`} className={({ isActive }) =>
+        <NavLink to={profile?.username ? `/profile/${profile.username}` : '/feed'} className={({ isActive }) =>
           `flex items-center justify-center w-12 h-full transition-colors ${isActive ? 'text-[#7c3aed]' : 'text-[#9585c5]'}`}>
           <User size={22} />
         </NavLink>

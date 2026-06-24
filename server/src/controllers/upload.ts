@@ -43,9 +43,18 @@ export const deleteFile = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    const userId = req.user!.id;
     const { bucket = 'media', path } = req.body;
 
     if (!path) throw createError('File path is required', 400);
+
+    // Ownership check — path must contain the user's ID segment
+    // Upload path format: {folder}/{userId}/{uuid}.{ext}
+    const pathParts = String(path).split('/');
+    const ownerIdInPath = pathParts.length >= 2 ? pathParts[pathParts.length - 2] : null;
+    if (ownerIdInPath !== userId) {
+      throw createError('Unauthorized: you can only delete your own files', 403);
+    }
 
     const { error } = await supabaseAdmin.storage.from(bucket).remove([path]);
 
