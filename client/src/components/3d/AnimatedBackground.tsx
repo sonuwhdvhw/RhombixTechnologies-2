@@ -8,23 +8,20 @@ export default function AnimatedBackground() {
     const mount = mountRef.current;
     if (!mount) return;
 
-    // ── Renderer ──────────────────────────────────────────
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
-    // ── Scene / Camera ────────────────────────────────────
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.z = 5;
 
-    // ── Particles ─────────────────────────────────────────
     const COUNT = 1200;
     const geo = new THREE.BufferGeometry();
     const positions = new Float32Array(COUNT * 3);
-    const colors = new Float32Array(COUNT * 3);
+    const pColors = new Float32Array(COUNT * 3); // FIXED: renamed from 'color' to 'pColors'
     const sizes = new Float32Array(COUNT);
 
     const palette = [
@@ -42,15 +39,15 @@ export default function AnimatedBackground() {
       positions[i * 3 + 2] = (Math.random() - 0.5) * 12;
 
       const c = palette[Math.floor(Math.random() * palette.length)];
-      colors[i * 3]     = c.r;
-      colors[i * 3 + 1] = c.g;
-      colors[i * 3 + 2] = c.b;
+      pColors[i * 3]     = c.r;
+      pColors[i * 3 + 1] = c.g;
+      pColors[i * 3 + 2] = c.b;
 
       sizes[i] = Math.random() * 2.5 + 0.5;
     }
 
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+    geo.setAttribute('pColor',   new THREE.BufferAttribute(pColors, 3)); // FIXED: renamed attribute
     geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
 
     const mat = new THREE.ShaderMaterial({
@@ -60,22 +57,20 @@ export default function AnimatedBackground() {
       },
       vertexShader: `
         attribute float size;
-        attribute vec3 color;
+        attribute vec3 pColor;
         varying vec3 vColor;
         varying float vAlpha;
         uniform float uTime;
         uniform vec2  uMouse;
 
         void main() {
-          vColor = color;
+          vColor = pColor;
           vec3 pos = position;
 
-          // Gentle wave
           pos.x += sin(uTime * 0.25 + position.y * 0.4) * 0.08;
           pos.y += cos(uTime * 0.2  + position.x * 0.3) * 0.07;
           pos.z += sin(uTime * 0.3  + position.z * 0.5) * 0.05;
 
-          // Mouse parallax
           pos.x += uMouse.x * 0.8;
           pos.y += uMouse.y * 0.6;
 
@@ -105,13 +100,12 @@ export default function AnimatedBackground() {
       `,
       transparent: true,
       depthWrite: false,
-      vertexColors: true,
+      vertexColors: false, // FIXED: false kyunki ab hum custom pColor use kar rahe hain
     });
 
     const particles = new THREE.Points(geo, mat);
     scene.add(particles);
 
-    // ── Floating orbs ─────────────────────────────────────
     const orbGeometry = new THREE.SphereGeometry(1, 32, 32);
     const orbs: THREE.Mesh[] = [];
     const orbData = [
@@ -133,7 +127,6 @@ export default function AnimatedBackground() {
       orbs.push(orb);
     });
 
-    // ── Mouse ─────────────────────────────────────────────
     const mouse    = new THREE.Vector2();
     const tMouse   = new THREE.Vector2();
     const onMove   = (e: MouseEvent) => {
@@ -142,7 +135,6 @@ export default function AnimatedBackground() {
     };
     window.addEventListener('mousemove', onMove);
 
-    // ── Resize ────────────────────────────────────────────
     const onResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -150,7 +142,6 @@ export default function AnimatedBackground() {
     };
     window.addEventListener('resize', onResize);
 
-    // ── Loop ──────────────────────────────────────────────
     let t = 0;
     let raf = 0;
     const tick = () => {
@@ -182,7 +173,9 @@ export default function AnimatedBackground() {
       geo.dispose();
       mat.dispose();
       renderer.dispose();
-      mount.removeChild(renderer.domElement);
+      if (mount.contains(renderer.domElement)) {
+        mount.removeChild(renderer.domElement);
+      }
     };
   }, []);
 
