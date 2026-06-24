@@ -9,105 +9,54 @@ import { useAuthStore } from '@/store/authStore';
 import { formatRelativeTime, cn } from '@/lib/utils';
 import PostCard from '@/components/feed/PostCard';
 import Avatar from '@/components/ui/Avatar';
-import { PostCardSkeleton, Skeleton } from '@/components/ui/SkeletonLoader';
-import toast from 'react-hot-toast';
 
-function CommentItem({
-  comment,
-  postId,
-  onDelete,
-  onReply,
-  depth = 0,
-}: {
-  comment: Comment;
-  postId: string;
-  onDelete: (id: string) => void;
-  onReply: (id: string, username: string) => void;
-  depth?: number;
+function CommentItem({ comment, postId, onDelete, onReply, depth = 0 }: {
+  comment: Comment; postId: string; onDelete: (id: string) => void;
+  onReply: (id: string, u: string) => void; depth?: number;
 }) {
   const { user } = useAuthStore();
   const [showReplies, setShowReplies] = useState(false);
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={cn('flex gap-3', depth > 0 && 'ml-10 pl-4 border-l border-white/6')}
-    >
+    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+      className={cn('flex gap-3', depth > 0 && 'ml-10 pl-4')}
+      style={depth > 0 ? { borderLeft: '2px solid rgba(124,58,237,0.12)' } : {}}>
       <Link to={`/profile/${comment.profiles?.username}`} className="shrink-0 mt-0.5">
-        <Avatar
-          src={comment.profiles?.avatar_url}
-          name={comment.profiles?.full_name || comment.profiles?.username}
-          size="sm"
-        />
+        <Avatar src={comment.profiles?.avatar_url} name={comment.profiles?.username} size="sm" />
       </Link>
-
       <div className="flex-1 min-w-0">
-        {/* Bubble */}
-        <div className="inline-block max-w-full bg-white/4 rounded-2xl rounded-tl-sm px-4 py-2.5">
+        <div className="inline-block max-w-full px-4 py-2.5 rounded-2xl rounded-tl-sm"
+          style={{ background: '#f5f3ff', border: '1px solid rgba(124,58,237,0.08)' }}>
           <Link to={`/profile/${comment.profiles?.username}`}>
-            <span className="text-xs font-semibold text-white hover:text-indigo-400 transition-colors">
-              {comment.profiles?.full_name || comment.profiles?.username}
-            </span>
+            <span className="text-xs font-bold hover:opacity-70" style={{ color: '#7c3aed' }}>{comment.profiles?.full_name || comment.profiles?.username}</span>
           </Link>
-          <p className="text-sm text-slate-300 mt-0.5 leading-relaxed whitespace-pre-wrap">
-            {comment.content}
-          </p>
+          <p className="text-sm mt-0.5 leading-relaxed" style={{ color: '#0f0820' }}>{comment.content}</p>
         </div>
-
-        {/* Meta */}
         <div className="flex items-center gap-3 mt-1 px-1">
-          <span className="text-[11px] text-slate-600">{formatRelativeTime(comment.created_at)}</span>
+          <span className="text-[11px]" style={{ color: '#9585c5' }}>{formatRelativeTime(comment.created_at)}</span>
           {depth === 0 && (
-            <button
-              onClick={() => onReply(comment.id, comment.profiles?.username || '')}
-              className="text-[11px] font-semibold text-slate-500 hover:text-indigo-400 transition-colors"
-            >
-              Reply
-            </button>
+            <button onClick={() => onReply(comment.id, comment.profiles?.username || '')}
+              className="text-[11px] font-bold transition-opacity hover:opacity-70" style={{ color: '#7c3aed' }}>Reply</button>
           )}
           {user?.id === comment.user_id && (
-            <button
-              onClick={() => onDelete(comment.id)}
-              className="text-[11px] text-slate-600 hover:text-red-400 transition-colors"
-              aria-label="Delete comment"
-            >
-              <Trash2 className="w-3 h-3" />
+            <button onClick={() => onDelete(comment.id)} className="text-[11px] transition-colors hover:text-red-400" style={{ color: '#9585c5' }}>
+              <Trash2 size={11} />
             </button>
           )}
         </div>
-
-        {/* Nested replies */}
         {comment.replies && comment.replies.length > 0 && (
           <div className="mt-2">
-            <button
-              onClick={() => setShowReplies(!showReplies)}
-              className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 mb-2"
-            >
-              <ChevronDown className={cn('w-3 h-3 transition-transform', showReplies && 'rotate-180')} />
+            <button onClick={() => setShowReplies(v => !v)}
+              className="flex items-center gap-1 text-xs font-semibold mb-2 transition-opacity hover:opacity-70" style={{ color: '#7c3aed' }}>
+              <ChevronDown size={12} className={cn('transition-transform', showReplies && 'rotate-180')} />
               {showReplies ? 'Hide' : `View ${comment.replies.length}`} {comment.replies.length === 1 ? 'reply' : 'replies'}
             </button>
-            <AnimatePresence>
-              {showReplies && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="space-y-3 overflow-hidden"
-                >
-                  {comment.replies.map((reply) => (
-                    <CommentItem
-                      key={reply.id}
-                      comment={reply}
-                      postId={postId}
-                      onDelete={onDelete}
-                      onReply={onReply}
-                      depth={depth + 1}
-                    />
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            {showReplies && (
+              <div className="space-y-3">
+                {comment.replies.map(r => (
+                  <CommentItem key={r.id} comment={r} postId={postId} onDelete={onDelete} onReply={onReply} depth={depth + 1} />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -118,7 +67,6 @@ function CommentItem({
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user, profile } = useAuthStore();
-
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [postLoading, setPostLoading] = useState(true);
@@ -130,89 +78,42 @@ export default function PostDetailPage() {
 
   useEffect(() => {
     if (!id) return;
-
-    // Load post
-    postsApi.getById(id)
-      .then(({ data }) => setPost(data.post))
-      .catch(() => toast.error('Post not found'))
-      .finally(() => setPostLoading(false));
-
-    // Load comments
-    commentsApi.getByPost(id)
-      .then(({ data }) => setComments(data.comments || []))
-      .finally(() => setCommentsLoading(false));
+    postsApi.getById(id).then(({ data }) => setPost(data.post)).catch(() => {}).finally(() => setPostLoading(false));
+    commentsApi.getByPost(id).then(({ data }) => setComments(data.comments || [])).finally(() => setCommentsLoading(false));
   }, [id]);
 
-  // Real-time comment updates
   useEffect(() => {
     if (!id) return;
-    const channel = supabase
-      .channel(`post-comments:${id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'comments',
-        filter: `post_id=eq.${id}`,
-      }, (payload) => {
-        const newC = payload.new as Comment;
-        // Only add if not already in list and not a reply (parent_id = null)
-        if (!newC.parent_id) {
-          setComments((prev) => {
-            if (prev.find((c) => c.id === newC.id)) return prev;
-            return [...prev, newC];
-          });
-        }
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    const ch = supabase.channel(`comments:${id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'comments', filter: `post_id=eq.${id}` }, (payload) => {
+        const c = payload.new as Comment;
+        if (!c.parent_id) setComments(p => p.find(x => x.id === c.id) ? p : [...p, c]);
+      }).subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim() || !id) return;
     setSubmitting(true);
-
     try {
-      const { data } = await commentsApi.create(id, {
-        content: newComment.trim(),
-        parent_id: replyTo?.id,
-      });
-      const comment = data.comment as Comment;
-
+      const { data } = await commentsApi.create(id, { content: newComment.trim(), parent_id: replyTo?.id });
+      const c = data.comment as Comment;
       if (replyTo) {
-        // Add reply to parent
-        setComments((prev) =>
-          prev.map((c) =>
-            c.id === replyTo.id
-              ? { ...c, replies: [...(c.replies || []), comment] }
-              : c
-          )
-        );
+        setComments(p => p.map(x => x.id === replyTo.id ? { ...x, replies: [...(x.replies || []), c] } : x));
       } else {
-        setComments((prev) => [...prev, comment]);
+        setComments(p => [...p, c]);
       }
-
-      // Update count on post
-      setPost((prev) => prev ? { ...prev, comments_count: prev.comments_count + 1 } : prev);
-      setNewComment('');
-      setReplyTo(null);
-    } catch {
-      toast.error('Failed to post comment');
-    } finally {
-      setSubmitting(false);
-    }
+      setPost(p => p ? { ...p, comments_count: p.comments_count + 1 } : p);
+      setNewComment(''); setReplyTo(null);
+    } finally { setSubmitting(false); }
   };
 
   const handleDelete = async (commentId: string) => {
     if (!id) return;
-    try {
-      await commentsApi.delete(id, commentId);
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
-      setPost((prev) => prev ? { ...prev, comments_count: Math.max(0, prev.comments_count - 1) } : prev);
-    } catch {
-      toast.error('Failed to delete comment');
-    }
+    await commentsApi.delete(id, commentId);
+    setComments(p => p.filter(c => c.id !== commentId));
+    setPost(p => p ? { ...p, comments_count: Math.max(0, p.comments_count - 1) } : p);
   };
 
   const handleReply = (commentId: string, username: string) => {
@@ -222,109 +123,72 @@ export default function PostDetailPage() {
   };
 
   return (
-    <div className="space-y-4">
-      {/* Back */}
-      <Link
-        to="/feed"
-        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Back to feed
+    <div className="max-w-[614px] mx-auto px-2 sm:px-0 py-4 space-y-4">
+      <Link to="/feed" className="inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-70 px-2"
+        style={{ color: '#7c3aed' }}>
+        <ArrowLeft size={16} /> Back to feed
       </Link>
 
-      {/* Post */}
       {postLoading ? (
-        <PostCardSkeleton />
+        <div className="g-card p-4 space-y-4">
+          <div className="flex items-center gap-3"><div className="skel w-10 h-10 rounded-full" /><div className="flex-1 space-y-2"><div className="skel h-3 w-28" /><div className="skel h-2.5 w-20" /></div></div>
+          <div className="skel h-64 rounded-xl" />
+        </div>
       ) : post ? (
         <PostCard post={post} onDelete={() => window.history.back()} />
       ) : (
-        <div className="glass-card p-10 text-center text-slate-500">Post not found</div>
+        <div className="g-card p-10 text-center" style={{ color: '#9585c5' }}>Post not found</div>
       )}
 
-      {/* Comments Section */}
-      <div className="glass-card overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/6 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-white">
-            Comments{post ? ` · ${post.comments_count}` : ''}
+      {/* Comments */}
+      <div className="g-card overflow-hidden">
+        <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(124,58,237,0.08)' }}>
+          <h2 className="text-sm font-bold" style={{ color: '#0f0820' }}>
+            Comments {post ? `· ${post.comments_count}` : ''}
           </h2>
         </div>
 
-        {/* Comment list */}
         <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
           {commentsLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex gap-3">
-                <Skeleton className="w-8 h-8 rounded-full shrink-0" />
-                <div className="space-y-2 flex-1">
-                  <Skeleton className="h-14 rounded-2xl" />
-                  <Skeleton className="h-2.5 w-24" />
-                </div>
-              </div>
+              <div key={i} className="flex gap-3"><div className="skel w-8 h-8 rounded-full shrink-0" /><div className="skel h-14 flex-1 rounded-2xl" /></div>
             ))
           ) : comments.length === 0 ? (
             <div className="py-8 text-center">
               <p className="text-2xl mb-2">💬</p>
-              <p className="text-sm text-slate-500">No comments yet. Be the first!</p>
+              <p className="text-sm" style={{ color: '#9585c5' }}>No comments yet. Be the first!</p>
             </div>
           ) : (
             <AnimatePresence>
-              {comments.map((comment) => (
-                <CommentItem
-                  key={comment.id}
-                  comment={comment}
-                  postId={id!}
-                  onDelete={handleDelete}
-                  onReply={handleReply}
-                />
+              {comments.map(c => (
+                <CommentItem key={c.id} comment={c} postId={id!} onDelete={handleDelete} onReply={handleReply} />
               ))}
             </AnimatePresence>
           )}
         </div>
 
-        {/* Comment input */}
         {user && (
-          <div className="px-5 py-4 border-t border-white/6">
+          <div className="px-5 py-4" style={{ borderTop: '1px solid rgba(124,58,237,0.08)' }}>
             {replyTo && (
               <div className="flex items-center gap-2 mb-2 px-2">
-                <span className="text-xs text-slate-500">
-                  Replying to <span className="text-indigo-400">@{replyTo.username}</span>
+                <span className="text-xs" style={{ color: '#9585c5' }}>
+                  Replying to <span style={{ color: '#7c3aed' }}>@{replyTo.username}</span>
                 </span>
-                <button
-                  onClick={() => { setReplyTo(null); setNewComment(''); }}
-                  className="text-xs text-slate-600 hover:text-slate-400 ml-auto"
-                >
-                  Cancel
-                </button>
+                <button onClick={() => { setReplyTo(null); setNewComment(''); }}
+                  className="text-xs ml-auto transition-opacity hover:opacity-70" style={{ color: '#9585c5' }}>Cancel</button>
               </div>
             )}
             <form onSubmit={handleSubmit} className="flex items-center gap-3">
-              <Avatar
-                src={profile?.avatar_url}
-                name={profile?.full_name || profile?.username}
-                size="sm"
-              />
+              <Avatar src={profile?.avatar_url} name={profile?.full_name || profile?.username} size="sm" />
               <div className="flex-1 relative">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Write a comment..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="input-field pr-10 text-sm"
-                  aria-label="Write a comment"
-                  maxLength={500}
-                />
-                <button
-                  type="submit"
-                  disabled={!newComment.trim() || submitting}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-indigo-400 hover:text-indigo-300 disabled:text-slate-600 transition-colors"
-                  aria-label="Post comment"
-                >
-                  {submitting ? (
-                    <div className="w-4 h-4 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
+                <input ref={inputRef} type="text" placeholder="Write a comment..." value={newComment}
+                  onChange={e => setNewComment(e.target.value)} className="c-input pr-10"
+                  maxLength={500} aria-label="Comment" />
+                <button type="submit" disabled={!newComment.trim() || submitting}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 disabled:opacity-30 transition-colors"
+                  style={{ color: '#7c3aed' }}>
+                  {submitting ? <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'rgba(124,58,237,0.2)', borderTopColor: '#7c3aed' }} />
+                    : <Send size={15} />}
                 </button>
               </div>
             </form>

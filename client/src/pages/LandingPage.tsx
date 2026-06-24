@@ -1,9 +1,11 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight, Zap, Shield, Globe, Users, MessageCircle, Heart, Star, ChevronDown } from 'lucide-react';
-import HeroScene from '@/components/3d/HeroScene';
 import { useInView } from 'react-intersection-observer';
+
+// HeroScene uses Three.js (~600KB) — load it lazily so it doesn't block paint
+const HeroScene = lazy(() => import('@/components/3d/HeroScene'));
 
 // ── Animated Counter ────────────────────────────────────────
 function Counter({ to, suffix = '' }: { to: number; suffix?: string }) {
@@ -121,9 +123,13 @@ export default function LandingPage() {
 
       {/* ── HERO ────────────────────────────────────────────── */}
       <section ref={heroRef} style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 64 }}>
-        {/* 3D Scene */}
+        {/* 3D Scene — lazy loaded, won't block initial paint */}
         <motion.div style={{ position: 'absolute', inset: 0, y: heroY, opacity: heroOpacity }}>
-          {showHero && <HeroScene />}
+          {showHero && (
+            <Suspense fallback={null}>
+              <HeroScene />
+            </Suspense>
+          )}
         </motion.div>
 
         {/* Gradient overlays */}

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import AnimatedBackground from '@/components/3d/AnimatedBackground';
 import toast from 'react-hot-toast';
 
@@ -21,6 +22,7 @@ function ErrMsg({ msg }: { msg?: string }) {
 
 export default function RegisterPage() {
   const navigate = useNavigate();
+  const { setUser, fetchProfile } = useAuthStore();
   const [form, setForm] = useState<Form>({ email: '', username: '', full_name: '', password: '', confirmPassword: '' });
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,6 +53,15 @@ export default function RegisterPage() {
     e.preventDefault();
     if (!validate()) return;
     setLoading(true);
+
+    const goToFeed = (userId: string, email: string) => {
+      // Manually set user in store so PublicRoute sees isAuthenticated=true immediately
+      setUser({ id: userId, email });
+      fetchProfile(userId);
+      toast.success('Welcome to Connectify! 🎉');
+      navigate('/feed', { replace: true });
+    };
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email: form.email,
@@ -58,11 +69,39 @@ export default function RegisterPage() {
         options: { data: { username: form.username.toLowerCase(), full_name: form.full_name } },
       });
       if (error) throw error;
-      if (data.session) { toast.success('Welcome to Connectify! 🎉'); navigate('/feed'); }
-      else setEmailSent(true);
+
+      // Case 1: Session returned immediately (email confirmation OFF)
+      if (data.session && data.user) {
+        goToFeed(data.user.id, data.user.email!);
+        return;
+      }
+
+      // Case 2: No session — try signing in right away
+      if (data.user) {
+        // Duplicate email check
+        if (data.user.identities && data.user.identities.length === 0) {
+          toast.error('An account with this email already exists.');
+          return;
+        }
+
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email: form.email,
+          password: form.password,
+        });
+
+        if (!signInError && signInData.session && signInData.user) {
+          goToFeed(signInData.user.id, signInData.user.email!);
+          return;
+        }
+      }
+
+      // Case 3: Email confirmation required
+      setEmailSent(true);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Registration failed');
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (emailSent) return (

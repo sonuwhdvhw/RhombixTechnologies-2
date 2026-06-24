@@ -15,9 +15,9 @@ client/.env.local
 server/.env
 server/.env.local
 
-# Production env files are included for deployment
-# client/.env.production  <-- included
-# server/.env.production  <-- included
+# Production env files — excluded (contain secrets)
+client/.env.production
+server/.env.production
 
 # Logs
 *.log

@@ -7,17 +7,15 @@ import { notificationsApi } from '@/lib/api';
 import { Notification } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
-import { formatRelativeTime, notificationMessages, cn } from '@/lib/utils';
+import { formatRelativeTime, notificationMessages } from '@/lib/utils';
 import Avatar from '@/components/ui/Avatar';
-import { NotificationSkeleton } from '@/components/ui/SkeletonLoader';
 
 type FilterType = 'all' | 'like' | 'comment' | 'friend_request';
-
-const filters: { value: FilterType; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'like', label: 'Likes' },
-  { value: 'comment', label: 'Comments' },
-  { value: 'friend_request', label: 'Requests' },
+const FILTERS: { v: FilterType; label: string }[] = [
+  { v: 'all', label: 'All' },
+  { v: 'like', label: 'Likes' },
+  { v: 'comment', label: 'Comments' },
+  { v: 'friend_request', label: 'Requests' },
 ];
 
 export default function NotificationsPage() {
@@ -28,9 +26,7 @@ export default function NotificationsPage() {
   const [filter, setFilter] = useState<FilterType>('all');
   const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [filter]);
+  useEffect(() => { fetchNotifications(); }, [filter]);
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -39,143 +35,106 @@ export default function NotificationsPage() {
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
       setNotificationCount(data.unreadCount || 0);
-    } catch {
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  // Real-time notifications
   useEffect(() => {
     if (!user) return;
-    const channel = supabase
-      .channel(`notifications:${user.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `user_id=eq.${user.id}`,
-      }, (payload) => {
-        setNotifications((prev) => [payload.new as Notification, ...prev]);
-        setUnreadCount((c) => c + 1);
-        setNotificationCount(unreadCount + 1);
-      })
+    const ch = supabase.channel(`notifs:${user.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` },
+        (payload) => { setNotifications(p => [payload.new as Notification, ...p]); setUnreadCount(c => c + 1); })
       .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    return () => { supabase.removeChannel(ch); };
   }, [user?.id]);
 
   const markAllRead = async () => {
     await notificationsApi.markRead();
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    setUnreadCount(0);
-    setNotificationCount(0);
+    setNotifications(p => p.map(n => ({ ...n, read: true })));
+    setUnreadCount(0); setNotificationCount(0);
   };
 
-  const getNotificationLink = (n: Notification) => {
-    if (n.post_id) return `/posts/${n.post_id}`;
-    if (n.actor) return `/profile/${n.actor.username}`;
-    return '#';
-  };
+  const getLink = (n: Notification) => n.post_id ? `/posts/${n.post_id}` : `/profile/${n.actor?.username}`;
 
   return (
-    <div className="space-y-4">
+    <div className="max-w-[614px] mx-auto px-4 py-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Bell className="w-5 h-5 text-indigo-400" />
-          <h1 className="text-lg font-bold text-white">Notifications</h1>
+          <Bell size={20} style={{ color: '#7c3aed' }} />
+          <h1 className="text-lg font-bold" style={{ color: '#0f0820' }}>Notifications</h1>
           {unreadCount > 0 && (
-            <span className="px-2 py-0.5 bg-indigo-500 rounded-full text-xs text-white font-bold">
-              {unreadCount}
-            </span>
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#7c3aed,#db2777)' }}>{unreadCount}</span>
           )}
         </div>
         {unreadCount > 0 && (
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            onClick={markAllRead}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 glass border border-white/8 rounded-xl hover:text-white transition-colors"
-          >
-            <Check className="w-3 h-3" /> Mark all read
-          </motion.button>
+          <button onClick={markAllRead}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+            style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.2)', color: '#7c3aed' }}>
+            <Check size={12} /> Mark all read
+          </button>
         )}
       </div>
 
       {/* Filter tabs */}
-      <div className="glass-card p-1 flex gap-1">
-        {filters.map((f) => (
-          <button
-            key={f.value}
-            onClick={() => setFilter(f.value)}
-            className={cn(
-              'flex-1 py-2 text-xs font-medium rounded-xl transition-all',
-              filter === f.value
-                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/20'
-                : 'text-slate-500 hover:text-slate-300'
-            )}
-          >
+      <div className="g-card p-1 flex gap-1">
+        {FILTERS.map(f => (
+          <button key={f.v} onClick={() => setFilter(f.v)}
+            className="flex-1 py-2 text-xs font-semibold rounded-xl transition-all"
+            style={filter === f.v ? {
+              background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.08))',
+              color: '#7c3aed', border: '1px solid rgba(124,58,237,0.2)',
+            } : { color: '#9585c5' }}>
             {f.label}
           </button>
         ))}
       </div>
 
-      {/* Notifications List */}
-      <div className="glass-card overflow-hidden divide-y divide-white/5">
+      {/* List */}
+      <div className="g-card overflow-hidden divide-y" style={{ borderColor: 'rgba(124,58,237,0.06)' }}>
         {loading ? (
-          Array.from({ length: 5 }).map((_, i) => <NotificationSkeleton key={i} />)
+          Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3.5">
+              <div className="skel w-10 h-10 rounded-full shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="skel h-3 w-48" />
+                <div className="skel h-2.5 w-24" />
+              </div>
+            </div>
+          ))
         ) : notifications.length === 0 ? (
           <div className="py-16 text-center">
-            <Bell className="w-10 h-10 text-slate-700 mx-auto mb-3" />
-            <p className="text-slate-500 text-sm">No notifications yet</p>
+            <Bell size={40} className="mx-auto mb-3" style={{ color: '#ede9fe' }} />
+            <p className="text-sm" style={{ color: '#9585c5' }}>No notifications yet</p>
           </div>
         ) : (
           <AnimatePresence>
             {notifications.map((n, i) => (
-              <motion.div
-                key={n.id}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
-              >
-                <Link
-                  to={getNotificationLink(n)}
-                  className={cn(
-                    'flex items-center gap-3 px-4 py-3.5 hover:bg-white/3 transition-colors',
-                    !n.read && 'bg-indigo-500/5'
-                  )}
-                >
-                  {/* Avatar with reaction badge */}
+              <motion.div key={n.id}
+                initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.04 }}>
+                <Link to={getLink(n)}
+                  className="flex items-center gap-3 px-4 py-3.5 transition-colors"
+                  style={{ background: !n.read ? 'rgba(124,58,237,0.03)' : 'transparent' }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(124,58,237,0.05)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = !n.read ? 'rgba(124,58,237,0.03)' : 'transparent')}>
                   <div className="relative shrink-0">
                     <Avatar src={n.actor?.avatar_url} name={n.actor?.username} size="md" />
                     <span className="absolute -bottom-0.5 -right-0.5 text-sm">
-                      {n.type === 'like' ? '❤️' :
-                       n.type === 'comment' ? '💬' :
-                       n.type === 'friend_request' ? '👋' :
-                       n.type === 'friend_accepted' ? '🤝' : '🔔'}
+                      {n.type === 'like' ? '❤️' : n.type === 'comment' ? '💬' : n.type === 'friend_request' ? '👋' : n.type === 'friend_accepted' ? '🤝' : '🔔'}
                     </span>
                   </div>
-
-                  {/* Text */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-slate-200">
-                      <span className="font-semibold text-white">{n.actor?.full_name || n.actor?.username}</span>
+                    <p className="text-sm" style={{ color: '#0f0820' }}>
+                      <span className="font-bold">{n.actor?.full_name || n.actor?.username}</span>
                       {' '}{notificationMessages[n.type]?.('').replace(n.actor?.full_name || '', '').trim()}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {formatRelativeTime(n.created_at)}
-                    </p>
+                    <p className="text-xs mt-0.5" style={{ color: '#9585c5' }}>{formatRelativeTime(n.created_at)}</p>
                   </div>
-
-                  {/* Post thumbnail */}
                   {n.post?.image_url && (
-                    <img src={n.post.image_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                    <img src={n.post.image_url} className="w-10 h-10 rounded-lg object-cover shrink-0" alt="" />
                   )}
-
-                  {/* Unread dot */}
-                  {!n.read && (
-                    <div className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" aria-label="Unread" />
-                  )}
+                  {!n.read && <div className="w-2 h-2 rounded-full shrink-0" style={{ background: '#7c3aed' }} />}
                 </Link>
               </motion.div>
             ))}

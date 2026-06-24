@@ -34,11 +34,13 @@ export const useAuthStore = create<AuthState>()(
 
       fetchProfile: async (userId: string) => {
         try {
-          const { data: profile } = await supabase
+          const { data: profile, error } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', userId)
             .single();
+
+          console.log('[fetchProfile]', { profile, error });
 
           if (profile) {
             set({ profile });
@@ -50,7 +52,13 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      // persist user + auth state, but always start with isLoading=true
+      // so App.tsx getSession() can properly resolve it
       partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      onRehydrateStorage: () => (state) => {
+        // After rehydration, keep isLoading true until getSession resolves
+        if (state) state.isLoading = true;
+      },
     }
   )
 );

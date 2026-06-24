@@ -10,6 +10,7 @@ export default defineConfig({
     },
   },
   build: {
+    target: 'es2020',
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
@@ -18,7 +19,7 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           // Framer Motion (large)
           'vendor-motion': ['framer-motion'],
-          // Three.js (large)
+          // Three.js (large) — loaded lazily so won't block initial render
           'vendor-three': ['three'],
           // Supabase
           'vendor-supabase': ['@supabase/supabase-js'],
@@ -31,6 +32,11 @@ export default defineConfig({
         },
       },
     },
+  },
+  // Preload critical chunks in dev as well
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'framer-motion', 'zustand'],
+    exclude: ['three'], // don't pre-bundle Three.js; let lazy import handle it
   },
   server: {
     port: 5173,

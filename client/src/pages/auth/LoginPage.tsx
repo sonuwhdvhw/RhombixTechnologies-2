@@ -3,11 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import AnimatedBackground from '@/components/3d/AnimatedBackground';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { setUser, fetchProfile } = useAuthStore();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -28,9 +30,14 @@ export default function LoginPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
-      navigate('/feed');
+      if (data.user) {
+        // Manually set store so ProtectedRoute sees isAuthenticated=true immediately
+        setUser({ id: data.user.id, email: data.user.email! });
+        fetchProfile(data.user.id);
+      }
+      navigate('/feed', { replace: true });
     } catch (err: unknown) {
       toast.error(err instanceof Error && err.message.includes('Invalid') ? 'Incorrect email or password' : 'Login failed');
     } finally { setLoading(false); }

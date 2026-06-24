@@ -17,15 +17,19 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit = 10485760,
   allowed_mime_types = ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4'];
 
--- Storage RLS Policies
+-- Storage RLS Policies (drop first to avoid conflicts on re-run)
+DROP POLICY IF EXISTS "Public media viewable by everyone" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload media" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update own media" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete own media" ON storage.objects;
 
 -- Anyone can view public media
-CREATE POLICY IF NOT EXISTS "Public media viewable by everyone"
+CREATE POLICY "Public media viewable by everyone"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'media');
 
 -- Authenticated users can upload
-CREATE POLICY IF NOT EXISTS "Authenticated users can upload media"
+CREATE POLICY "Authenticated users can upload media"
 ON storage.objects FOR INSERT
 WITH CHECK (
   bucket_id = 'media'
@@ -33,7 +37,7 @@ WITH CHECK (
 );
 
 -- Users can update their own uploads
-CREATE POLICY IF NOT EXISTS "Users can update own media"
+CREATE POLICY "Users can update own media"
 ON storage.objects FOR UPDATE
 USING (
   bucket_id = 'media'
@@ -41,7 +45,7 @@ USING (
 );
 
 -- Users can delete their own uploads
-CREATE POLICY IF NOT EXISTS "Users can delete own media"
+CREATE POLICY "Users can delete own media"
 ON storage.objects FOR DELETE
 USING (
   bucket_id = 'media'
