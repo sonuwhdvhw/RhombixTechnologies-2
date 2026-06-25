@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
-import AnimatedBackground from '@/components/3d/AnimatedBackground';
 import toast from 'react-hot-toast';
 
 interface Form { email: string; username: string; full_name: string; password: string; confirmPassword: string; }
@@ -102,8 +101,10 @@ export default function RegisterPage() {
   };
 
   if (emailSent) return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: '#08080f' }}>
-      <AnimatedBackground />
+    <div className="min-h-screen flex items-center justify-center p-4" style={{
+      background: 'linear-gradient(180deg, #08101f 0%, #090b16 42%, #0d131f 100%)',
+      backgroundImage: 'radial-gradient(circle at 18% 18%, rgba(124,58,237,0.10) 0%, transparent 24%), radial-gradient(circle at 82% 22%, rgba(56,189,248,0.08) 0%, transparent 18%), radial-gradient(circle at 52% 82%, rgba(236,72,153,0.06) 0%, transparent 16%)',
+    }}>
       <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
         className="g-card p-8 w-full max-w-[360px] text-center relative z-10">
         <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl"
@@ -123,8 +124,10 @@ export default function RegisterPage() {
   );
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#08080f' }}>
-      <AnimatedBackground />
+    <div className="min-h-screen flex" style={{
+      background: 'linear-gradient(180deg, #08101f 0%, #090b16 42%, #0d131f 100%)',
+      backgroundImage: 'radial-gradient(circle at 18% 18%, rgba(124,58,237,0.10) 0%, transparent 24%), radial-gradient(circle at 82% 22%, rgba(56,189,248,0.08) 0%, transparent 18%), radial-gradient(circle at 52% 82%, rgba(236,72,153,0.06) 0%, transparent 16%)',
+    }}>
 
       {/* Left panel */}
       <div className="hidden lg:flex flex-1 items-center justify-center p-12 relative z-10">

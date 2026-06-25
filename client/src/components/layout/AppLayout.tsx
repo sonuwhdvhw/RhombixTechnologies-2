@@ -4,7 +4,6 @@ import Navbar from './Navbar';
 import Sidebar from './Sidebar';
 import RightSidebar from './RightSidebar';
 import CreatePostModal from '@/components/feed/CreatePostModal';
-import AnimatedBackground from '@/components/3d/AnimatedBackground';
 import { useUIStore } from '@/store/uiStore';
 import { useAuthStore } from '@/store/authStore';
 
@@ -13,9 +12,14 @@ export default function AppLayout() {
   const { profile } = useAuthStore();
 
   return (
-    <div className="min-h-screen" style={{ background: '#f8f5ff' }}>
-      {/* Subtle 3D Animated background */}
-      <AnimatedBackground />
+    <div className="min-h-screen" style={{
+      background: '#06070f',
+      backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(124,58,237,0.08), transparent 18%), radial-gradient(circle at 80% 18%, rgba(56,189,248,0.06), transparent 16%), radial-gradient(circle at 50% 85%, rgba(236,72,153,0.05), transparent 20%)',
+    }}>
+      {/* Ambient accents */}
+      <div className="orb orb-1" />
+      <div className="orb orb-2" />
+      <div className="orb orb-3" />
 
       <Navbar />
 

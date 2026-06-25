@@ -24,9 +24,14 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      await supabase.auth.signOut();
-      window.location.href = '/auth/login';
+      // Sirf tab logout karo jab session genuinely expire ho gaya ho
+      const { data } = await supabase.auth.getSession();
+      if (!data.session) {
+        await supabase.auth.signOut();
+        window.location.href = '/auth/login';
+      }
     }
+    // Network error ya server error pe LOGOUT MAT KARO — sirf error propagate karo
     return Promise.reject(error);
   }
 );

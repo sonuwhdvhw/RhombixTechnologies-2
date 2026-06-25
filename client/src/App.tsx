@@ -114,7 +114,7 @@ export default function App() {
   }, [setUser, setLoading, fetchProfile]);
 
   return (
-    <div className="min-h-screen" style={{ background: '#f8f5ff' }}>
+    <div className="min-h-screen" style={{ background: '#0a0a0f' }}>
       <CustomCursor />
       <Suspense fallback={<PageLoader />}>
         <AnimatePresence mode="wait">

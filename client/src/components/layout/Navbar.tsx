@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Home, Search, PlusSquare, Heart, MessageCircle,
-  LogOut, Settings, User
+  Home, Search, PlusSquare, Bell, MessageCircle,
+  LogOut, Settings, User, X
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore } from '@/store/uiStore';
@@ -21,6 +21,7 @@ export default function Navbar() {
   const [searchRes, setSearchRes] = useState<Profile[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const doSearch = debounce(async (q: string) => {
@@ -48,59 +49,98 @@ export default function Navbar() {
       <div className="max-w-[975px] mx-auto px-4 h-[60px] flex items-center justify-between gap-4">
 
         {/* Logo */}
-        <Link to="/feed" className="shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+        <Link to="/feed" className="shrink-0 group">
+          <motion.div className="flex items-center gap-2.5"
+            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center relative overflow-hidden"
+              style={{
+                background: 'linear-gradient(135deg, #7c3aed, #a855f7, #ec4899)',
+                boxShadow: '0 0 16px rgba(124,58,237,0.5), 0 0 0 1px rgba(255,255,255,0.1) inset',
+              }}>
+              <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.15), transparent)' }} />
               <svg width="18" height="18" viewBox="0 0 40 40" fill="none">
                 <path d="M8 20C8 13.373 13.373 8 20 8s12 5.373 12 12-5.373 12-12 12S8 26.627 8 20z" stroke="#fff" strokeWidth="2.5"/>
                 <path d="M14 20l4 4 8-8" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             <span className="brand hidden sm:block">Connectify</span>
-          </div>
+          </motion.div>
         </Link>
 
         {/* Search */}
-        <div className="flex-1 max-w-[268px] relative hidden md:block">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2" size={14} style={{ color: '#6060a0' }} />
+        <div className="flex-1 max-w-[280px] relative hidden md:block">
+          <motion.div
+            animate={{ scale: searchFocused ? 1.01 : 1 }}
+            transition={{ duration: 0.15 }}
+            className="relative">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none transition-colors"
+              size={14}
+              style={{ color: searchFocused ? '#a78bfa' : '#5c5c8a' }} />
             <input
               type="text"
-              placeholder="Search"
+              placeholder="Search people..."
               value={searchQ}
               onChange={e => { setSearchQ(e.target.value); setSearchOpen(true); }}
-              onFocus={() => setSearchOpen(true)}
-              onBlur={() => setTimeout(() => setSearchOpen(false), 200)}
-              className="w-full h-[36px] rounded-xl pl-9 pr-3 text-sm outline-none"
+              onFocus={() => { setSearchOpen(true); setSearchFocused(true); }}
+              onBlur={() => { setTimeout(() => setSearchOpen(false), 200); setSearchFocused(false); }}
+              className="w-full h-[38px] rounded-xl pl-9 pr-9 text-sm outline-none transition-all"
               style={{
-                background: 'rgba(26,26,46,0.8)',
-                border: '1px solid rgba(139,92,246,0.2)',
+                background: searchFocused ? 'rgba(124,58,237,0.08)' : 'rgba(255,255,255,0.04)',
+                border: `1.5px solid ${searchFocused ? 'rgba(124,58,237,0.45)' : 'rgba(139,92,246,0.15)'}`,
                 color: '#f0f0ff',
+                boxShadow: searchFocused ? '0 0 0 3px rgba(124,58,237,0.1), 0 0 20px rgba(124,58,237,0.08)' : 'none',
+                backdropFilter: 'blur(8px)',
               }}
             />
-          </div>
+            {searchQ && (
+              <button className="absolute right-3 top-1/2 -translate-y-1/2"
+                onClick={() => { setSearchQ(''); setSearchRes([]); }}
+                style={{ color: '#5c5c8a' }}>
+                <X size={12} />
+              </button>
+            )}
+          </motion.div>
 
           <AnimatePresence>
             {searchOpen && searchRes.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
-                className="absolute top-full left-0 right-0 mt-1 rounded-xl overflow-hidden shadow-2xl z-50"
-                style={{ background: 'rgba(20,20,40,0.95)', border: '1px solid rgba(139,92,246,0.25)', backdropFilter: 'blur(16px)' }}
-              >
-                {searchRes.slice(0, 6).map(u => (
-                  <Link key={u.id} to={`/profile/${u.username}`}
-                    onClick={() => { setSearchQ(''); setSearchOpen(false); }}
-                    className="flex items-center gap-3 px-4 py-3 transition-colors"
-                    style={{ borderBottom: '1px solid rgba(139,92,246,0.08)' }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(139,92,246,0.1)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-                    <Avatar src={u.avatar_url} name={u.full_name || u.username} size="sm" />
-                    <div>
-                      <p className="text-sm font-semibold" style={{ color: '#f0f0ff' }}>{u.username}</p>
-                      <p className="text-xs" style={{ color: '#6060a0' }}>{u.full_name}</p>
-                    </div>
-                  </Link>
+                initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 6, scale: 0.98 }}
+                transition={{ duration: 0.15 }}
+                className="absolute top-full left-0 right-0 mt-2 rounded-2xl overflow-hidden z-50"
+                style={{
+                  background: 'rgba(12,12,22,0.97)',
+                  border: '1px solid rgba(139,92,246,0.2)',
+                  backdropFilter: 'blur(24px)',
+                  boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03) inset',
+                }}>
+                <div className="px-3 py-2" style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: '#5c5c8a' }}>People</p>
+                </div>
+                {searchRes.slice(0, 6).map((u, i) => (
+                  <motion.div key={u.id}
+                    initial={{ opacity: 0, x: -8 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}>
+                    <Link to={`/profile/${u.username}`}
+                      onClick={() => { setSearchQ(''); setSearchOpen(false); }}
+                      className="flex items-center gap-3 px-4 py-3 transition-all group"
+                      style={{ borderBottom: '1px solid rgba(139,92,246,0.06)' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(124,58,237,0.08)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                      <div className="relative">
+                        <Avatar src={u.avatar_url} name={u.full_name || u.username} size="sm" />
+                        <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ boxShadow: '0 0 12px rgba(124,58,237,0.4)' }} />
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold" style={{ color: '#f0f0ff' }}>@{u.username}</p>
+                        <p className="text-xs" style={{ color: '#5c5c8a' }}>{u.full_name}</p>
+                      </div>
+                    </Link>
+                  </motion.div>
                 ))}
               </motion.div>
             )}
@@ -108,70 +148,125 @@ export default function Navbar() {
         </div>
 
         {/* Nav Icons */}
-        <nav className="flex items-center gap-1">
-          <NavLink to="/feed" className={({ isActive }) =>
-            `w-10 h-10 flex items-center justify-center rounded-xl transition-all ${isActive ? 'nav-active' : 'text-[#6060a0] hover:text-[#a78bfa] hover:bg-[rgba(139,92,246,0.1)]'}`}
-            aria-label="Home"><Home size={22} /></NavLink>
+        <nav className="flex items-center gap-0.5">
+          {[
+            { to: '/feed', icon: Home, label: 'Home' },
+            { to: '/messages', icon: MessageCircle, label: 'Messages' },
+          ].map(({ to, icon: Icon, label }) => (
+            <NavLink key={to} to={to} aria-label={label}
+              className={({ isActive }) =>
+                `w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${
+                  isActive ? 'nav-active' : ''
+                }`
+              }
+              style={({ isActive }) => ({
+                color: isActive ? '#a78bfa' : '#5c5c8a',
+              })}>
+              {({ isActive }) => (
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <Icon size={21} style={{ filter: isActive ? 'drop-shadow(0 0 6px rgba(167,139,250,0.6))' : 'none' }} />
+                </motion.div>
+              )}
+            </NavLink>
+          ))}
 
-          <NavLink to="/messages" className={({ isActive }) =>
-            `w-10 h-10 flex items-center justify-center rounded-xl transition-all ${isActive ? 'nav-active' : 'text-[#6060a0] hover:text-[#a78bfa] hover:bg-[rgba(139,92,246,0.1)]'}`}
-            aria-label="Messages"><MessageCircle size={22} /></NavLink>
+          {/* Create */}
+          <motion.button
+            onClick={() => setCreatePostModalOpen(true)}
+            whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all"
+            style={{ color: '#5c5c8a' }}
+            aria-label="Create post">
+            <PlusSquare size={21} />
+          </motion.button>
 
-          <button onClick={() => setCreatePostModalOpen(true)}
-            className="w-10 h-10 flex items-center justify-center rounded-xl transition-all text-[#6060a0] hover:text-[#a78bfa] hover:bg-[rgba(139,92,246,0.1)]"
-            aria-label="Create post"><PlusSquare size={22} /></button>
-
-          <NavLink to="/notifications" className={({ isActive }) =>
-            `w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${isActive ? 'nav-active' : 'text-[#6060a0] hover:text-[#a78bfa] hover:bg-[rgba(139,92,246,0.1)]'}`}
-            aria-label="Notifications">
-            <Heart size={22} />
-            {notificationCount > 0 && <span className="notif-dot" />}
+          {/* Notifications */}
+          <NavLink to="/notifications" aria-label="Notifications"
+            className={({ isActive }) =>
+              `w-10 h-10 flex items-center justify-center rounded-xl transition-all relative ${isActive ? 'nav-active' : ''}`
+            }
+            style={({ isActive }) => ({ color: isActive ? '#a78bfa' : '#5c5c8a' })}>
+            {({ isActive }) => (
+              <>
+                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                  <Bell size={21} style={{ filter: isActive ? 'drop-shadow(0 0 6px rgba(167,139,250,0.6))' : 'none' }} />
+                </motion.div>
+                {notificationCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }} animate={{ scale: 1 }}
+                    className="notif-dot" />
+                )}
+              </>
+            )}
           </NavLink>
 
           {/* Profile menu */}
           <div ref={menuRef} className="relative ml-1">
-            <button onClick={() => setMenuOpen(v => !v)}
-              className="flex items-center justify-center w-10 h-10 rounded-xl hover:bg-[#1c1c1c] transition-colors"
+            <motion.button
+              onClick={() => setMenuOpen(v => !v)}
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              className="flex items-center justify-center w-10 h-10 rounded-xl transition-all relative"
+              style={{
+                border: menuOpen ? '1.5px solid rgba(124,58,237,0.4)' : '1.5px solid transparent',
+                boxShadow: menuOpen ? '0 0 16px rgba(124,58,237,0.2)' : 'none',
+              }}
               aria-label="Profile menu" aria-expanded={menuOpen}>
               <Avatar src={profile?.avatar_url} name={profile?.full_name || profile?.username} size="sm" />
-            </button>
+            </motion.button>
 
             <AnimatePresence>
               {menuOpen && (
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.96, y: 4 }}
+                  initial={{ opacity: 0, scale: 0.94, y: 6 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.96, y: 4 }}
-                  transition={{ duration: 0.12 }}
-                  className="absolute right-0 top-full mt-2 w-[200px] rounded-xl overflow-hidden shadow-2xl z-50 border border-[#363636]"
-                  style={{ background: '#1c1c1c' }}
-                >
+                  exit={{ opacity: 0, scale: 0.94, y: 6 }}
+                  transition={{ duration: 0.15, ease: [0.22,1,0.36,1] }}
+                  className="absolute right-0 top-full mt-2 w-[220px] rounded-2xl overflow-hidden z-50"
+                  style={{
+                    background: 'rgba(12,12,22,0.97)',
+                    border: '1px solid rgba(139,92,246,0.2)',
+                    backdropFilter: 'blur(24px)',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04) inset',
+                  }}>
+                  {/* Profile header */}
                   <Link to={`/profile/${profile?.username}`}
                     onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-[#262626] transition-colors border-b border-[#262626]">
-                    <Avatar src={profile?.avatar_url} name={profile?.full_name || profile?.username} size="sm" />
+                    className="flex items-center gap-3 px-4 py-4 transition-all group"
+                    style={{ borderBottom: '1px solid rgba(139,92,246,0.1)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(124,58,237,0.08)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <div className="relative">
+                      <Avatar src={profile?.avatar_url} name={profile?.full_name || profile?.username} size="sm" />
+                      <div className="absolute inset-0 rounded-full"
+                        style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.3), transparent)', opacity: 0 }} />
+                    </div>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">{profile?.username}</p>
-                      <p className="text-xs text-[#737373] truncate">{profile?.full_name}</p>
+                      <p className="text-sm font-bold truncate" style={{ color: '#f0f0ff' }}>@{profile?.username}</p>
+                      <p className="text-xs truncate" style={{ color: '#5c5c8a' }}>{profile?.full_name}</p>
                     </div>
                   </Link>
 
-                  <Link to={`/profile/${profile?.username}`}
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-[#262626] transition-colors">
-                    <User size={16} className="text-[#a8a8a8]" /> Profile
-                  </Link>
+                  {/* Menu items */}
+                  {[
+                    { to: `/profile/${profile?.username}`, icon: User, label: 'View Profile' },
+                    { to: '/friends', icon: Settings, label: 'Friends' },
+                  ].map(({ to, icon: Icon, label }) => (
+                    <Link key={to} to={to} onClick={() => setMenuOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 text-sm transition-all"
+                      style={{ color: '#a8a8d0', borderBottom: '1px solid rgba(139,92,246,0.06)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(124,58,237,0.08)'; e.currentTarget.style.color = '#f0f0ff'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#a8a8d0'; }}>
+                      <Icon size={15} style={{ color: '#5c5c8a' }} />
+                      {label}
+                    </Link>
+                  ))}
 
-                  <Link to="/friends"
-                    onClick={() => setMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm text-white hover:bg-[#262626] transition-colors">
-                    <Settings size={16} className="text-[#a8a8a8]" /> Friends
-                  </Link>
-
-                  <div className="border-t border-[#262626]" />
                   <button onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#ff3040] hover:bg-[#262626] transition-colors">
-                    <LogOut size={16} /> Log out
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-all"
+                    style={{ color: '#f87171' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                    <LogOut size={15} /> Log out
                   </button>
                 </motion.div>
               )}

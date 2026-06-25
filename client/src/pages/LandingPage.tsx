@@ -1,11 +1,8 @@
-import { useRef, useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ArrowRight, Zap, Shield, Globe, Users, MessageCircle, Heart, Star, ChevronDown } from 'lucide-react';
 import { useInView } from 'react-intersection-observer';
-
-// HeroScene uses Three.js (~600KB) — load it lazily so it doesn't block paint
-const HeroScene = lazy(() => import('@/components/3d/HeroScene'));
 
 // ── Animated Counter ────────────────────────────────────────
 function Counter({ to, suffix = '' }: { to: number; suffix?: string }) {
@@ -71,19 +68,7 @@ const FEATURES = [
 
 
 export default function LandingPage() {
-  const heroRef = useRef<HTMLElement>(null);
-  const [showHero, setShowHero] = useState(false);
-  const { scrollYProgress } = useScroll({ target: heroRef });
-  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
   const [statsRef, statsInView] = useInView({ triggerOnce: true, threshold: 0.3 });
-
-  useEffect(() => {
-    const update = () => setShowHero(window.innerWidth >= 768);
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
 
   return (
     <div style={{ background: '#faf8ff', color: '#0f0820', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }}>
@@ -122,20 +107,10 @@ export default function LandingPage() {
 
 
       {/* ── HERO ────────────────────────────────────────────── */}
-      <section ref={heroRef} style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 64 }}>
-        {/* 3D Scene — lazy loaded, won't block initial paint */}
-        <motion.div style={{ position: 'absolute', inset: 0, y: heroY, opacity: heroOpacity }}>
-          {showHero && (
-            <Suspense fallback={null}>
-              <HeroScene />
-            </Suspense>
-          )}
-        </motion.div>
-
-        {/* Gradient overlays */}
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 30% 40%, rgba(99,102,241,0.12) 0%, transparent 60%)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 70% 60%, rgba(236,72,153,0.08) 0%, transparent 55%)' }} />
-        <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 200, background: 'linear-gradient(to top, #05050f, transparent)' }} />
+      <section style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', paddingTop: 64, background: 'linear-gradient(180deg, #f9fafb 0%, #eef2ff 45%, #eef2ff 100%)' }}>
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(circle at 15% 20%, rgba(124,58,237,0.10), transparent 22%), radial-gradient(circle at 85% 25%, rgba(56,189,248,0.08), transparent 18%), radial-gradient(circle at 50% 75%, rgba(236,72,153,0.06), transparent 20%)' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(255,255,255,0.45), rgba(248,250,255,0.40))' }} />
+        <div style={{ position: 'absolute', inset: '20% 10%', borderRadius: '30%', background: 'rgba(255,255,255,0.7)', filter: 'blur(80px)' }} />
 
         {/* Hero content */}
         <motion.div initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
@@ -152,7 +127,7 @@ export default function LandingPage() {
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
             style={{ fontSize: 'clamp(42px,8vw,90px)', fontWeight: 900, lineHeight: 1.0, marginBottom: 24, letterSpacing: '-2px' }}>
             <span style={{ color: '#0f0820' }}>Share Your</span><br />
-            <span style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #db2777 50%, #0891b2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundSize: '200% 200%', animation: showHero ? 'grad-shift 4s ease infinite' : undefined }}>World.</span>
+            <span style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #db2777 50%, #0891b2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>World.</span>
           </motion.h1>
 
           <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
@@ -167,7 +142,6 @@ export default function LandingPage() {
               padding: '14px 32px', borderRadius: 14, fontSize: 16, fontWeight: 700,
               color: '#fff', textDecoration: 'none',
               background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899)',
-              backgroundSize: '200% 200%', animation: showHero ? 'grad-shift 3s ease infinite' : undefined,
               boxShadow: '0 8px 32px rgba(99,102,241,0.5)',
             }}>
               Create free account <ArrowRight size={18} />
@@ -306,7 +280,6 @@ export default function LandingPage() {
               padding: '16px 40px', borderRadius: 16, fontSize: 17, fontWeight: 800,
               color: '#fff', textDecoration: 'none',
               background: 'linear-gradient(135deg,#6366f1,#8b5cf6,#ec4899)',
-              backgroundSize: '200% 200%', animation: showHero ? 'grad-shift 3s ease infinite' : undefined,
               boxShadow: '0 8px 40px rgba(99,102,241,0.5)',
             }}>
               Create free account <ArrowRight size={20} />

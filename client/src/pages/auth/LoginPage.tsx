@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
-import AnimatedBackground from '@/components/3d/AnimatedBackground';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -44,8 +43,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#08080f' }}>
-      <AnimatedBackground />
+    <div className="min-h-screen flex" style={{
+      background: 'linear-gradient(180deg, #08101f 0%, #090b16 42%, #0d131f 100%)',
+      backgroundImage: 'radial-gradient(circle at 18% 18%, rgba(124,58,237,0.10) 0%, transparent 24%), radial-gradient(circle at 82% 22%, rgba(56,189,248,0.08) 0%, transparent 18%), radial-gradient(circle at 52% 82%, rgba(236,72,153,0.06) 0%, transparent 16%)',
+    }}>
 
       {/* Left panel */}
       <div className="hidden lg:flex flex-1 items-center justify-center p-12 relative z-10">
